@@ -5,11 +5,12 @@
 (function () {
 
   const _auth = window._fbAuth;
+
   const _db = window._fbDb;
 
-  // ─────────────────────────────────────────────
+  // ============================================
   // REGISTER
-  // ─────────────────────────────────────────────
+  // ============================================
 
   async function registerUser({
     name,
@@ -29,35 +30,47 @@
           password
         );
 
-      await _db.collection('users')
+      await _db.collection("users")
         .doc(cred.user.uid)
         .set({
+
           uid: cred.user.uid,
+
           name,
+
           email: email.toLowerCase().trim(),
+
           phone,
+
           clinic,
+
           city,
+
           specialisation,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+
+          createdAt:
+            firebase.firestore.FieldValue.serverTimestamp()
         });
 
-      return { ok: true };
+      return {
+        ok: true
+      };
 
     } catch (e) {
 
       const MAP = {
-        'auth/email-already-in-use':
-          'Email already registered.',
 
-        'auth/weak-password':
-          'Password should be minimum 6 characters.',
+        "auth/email-already-in-use":
+          "Email already registered.",
 
-        'auth/invalid-email':
-          'Invalid email address.',
+        "auth/weak-password":
+          "Password must be minimum 6 characters.",
 
-        'auth/network-request-failed':
-          'Internet connection problem.'
+        "auth/invalid-email":
+          "Invalid email address.",
+
+        "auth/network-request-failed":
+          "Network error."
       };
 
       return {
@@ -67,9 +80,9 @@
     }
   }
 
-  // ─────────────────────────────────────────────
+  // ============================================
   // LOGIN
-  // ─────────────────────────────────────────────
+  // ============================================
 
   async function loginUser(email, password) {
 
@@ -80,41 +93,37 @@
         password
       );
 
-      return { ok: true };
+      return {
+        ok: true
+      };
 
     } catch (e) {
 
       const MAP = {
 
-        'auth/user-not-found':
-          'No user found.',
+        "auth/user-not-found":
+          "User not found.",
 
-        'auth/wrong-password':
-          'Wrong password.',
+        "auth/wrong-password":
+          "Wrong password.",
 
-        'auth/invalid-credential':
-          'Invalid email or password.',
+        "auth/invalid-credential":
+          "Invalid email or password.",
 
-        'auth/invalid-email':
-          'Invalid email address.',
-
-        'auth/too-many-requests':
-          'Too many attempts. Try later.',
-
-        'auth/network-request-failed':
-          'Internet connection error.'
+        "auth/network-request-failed":
+          "Network problem."
       };
 
       return {
         ok: false,
-        error: MAP[e.code] || 'Login failed.'
+        error: MAP[e.code] || "Login failed."
       };
     }
   }
 
-  // ─────────────────────────────────────────────
+  // ============================================
   // LOGOUT
-  // ─────────────────────────────────────────────
+  // ============================================
 
   async function logout() {
 
@@ -123,42 +132,9 @@
     window.location.href = "login.html";
   }
 
-  // ─────────────────────────────────────────────
-  // GET CURRENT USER
-  // ─────────────────────────────────────────────
-
-  function getSession() {
-    return _auth.currentUser;
-  }
-
-  // ─────────────────────────────────────────────
-  // GET USER PROFILE
-  // ─────────────────────────────────────────────
-
-  async function getUserProfile(uid) {
-
-    try {
-
-      const snap =
-        await _db.collection('users')
-          .doc(uid)
-          .get();
-
-      if (snap.exists) {
-        return snap.data();
-      }
-
-      return null;
-
-    } catch (err) {
-
-      return null;
-    }
-  }
-
-  // ─────────────────────────────────────────────
-  // REQUIRE LOGIN
-  // ─────────────────────────────────────────────
+  // ============================================
+  // REQUIRE AUTH
+  // ============================================
 
   function requireAuth(callback) {
 
@@ -167,11 +143,17 @@
       if (!user) {
 
         window.location.href = "login.html";
+
         return;
       }
 
+      const snap =
+        await _db.collection("users")
+          .doc(user.uid)
+          .get();
+
       const profile =
-        await getUserProfile(user.uid);
+        snap.exists ? snap.data() : {};
 
       callback({
         uid: user.uid,
@@ -181,9 +163,9 @@
     });
   }
 
-  // ─────────────────────────────────────────────
+  // ============================================
   // REQUIRE GUEST
-  // ─────────────────────────────────────────────
+  // ============================================
 
   function requireGuest() {
 
@@ -192,22 +174,29 @@
       if (user) {
 
         window.location.href = "index.html";
+
+      } else {
+
+        document.body.style.opacity = "1";
       }
     });
   }
 
-  // ─────────────────────────────────────────────
-  // EXPORT GLOBAL
-  // ─────────────────────────────────────────────
+  // ============================================
+  // EXPORT
+  // ============================================
 
   window.Auth = {
+
     registerUser,
+
     loginUser,
+
     logout,
+
     requireAuth,
-    requireGuest,
-    getSession,
-    getUserProfile
+
+    requireGuest
   };
 
 })();
