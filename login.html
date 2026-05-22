@@ -17,6 +17,8 @@
       display:flex;align-items:center;justify-content:center;padding:20px;
       background-image:radial-gradient(ellipse at 20% 50%,rgba(124,197,143,0.18) 0%,transparent 60%),
                        radial-gradient(ellipse at 80% 20%,rgba(35,65,35,0.07) 0%,transparent 50%);
+      /* Start hidden — requireGuest() reveals when auth state is confirmed */
+      opacity:0; transition:opacity 0.2s;
     }
     .auth-container{width:100%;max-width:420px;}
     .auth-logo-wrap{text-align:center;margin-bottom:24px;}
@@ -96,39 +98,65 @@
       </form>
       <div id="loginMsg" class="hidden"></div>
       <div class="divider">or</div>
-      <div class="auth-switch">Don't have an account? <a href="index.html">Register here</a></div>
+      <div class="auth-switch">Don't have an account? <a href="register.html">Register here</a></div>
     </div>
   </div>
+
+  <!-- Firebase Compat SDK (no bundler needed) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
   <script src="js/auth.js"></script>
   <script>
+    // Redirect to dashboard if already logged in
     Auth.requireGuest();
-    const pwInput = document.getElementById('password');
+
+    // Password show/hide toggle
+    const pwInput  = document.getElementById('password');
     const pwToggle = document.getElementById('pwToggle');
     pwToggle.addEventListener('click', () => {
-      const vis = pwInput.type === 'password';
-      pwInput.type = vis ? 'text' : 'password';
+      const vis     = pwInput.type === 'password';
+      pwInput.type  = vis ? 'text' : 'password';
       pwToggle.textContent = vis ? 'Hide' : 'Show';
     });
-    document.getElementById('loginForm').addEventListener('submit', e => {
+
+    // Form submit
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const email = document.getElementById('email').value.trim();
+      const email    = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
-      const msg = document.getElementById('loginMsg');
-      const btn = document.getElementById('loginBtn');
-      const btnText = document.getElementById('btnText');
-      const btnLoad = document.getElementById('btnLoader');
+      const msg      = document.getElementById('loginMsg');
+      const btn      = document.getElementById('loginBtn');
+      const btnText  = document.getElementById('btnText');
+      const btnLoad  = document.getElementById('btnLoader');
+
+      if (!email)    return showMsg('Please enter your email address.');
+      if (!password) return showMsg('Please enter your password.');
+
       msg.className = 'hidden';
-      btn.disabled = true; btnText.classList.add('hidden'); btnLoad.classList.remove('hidden');
-      setTimeout(() => {
-        const result = Auth.loginUser(email, password);
-        btn.disabled = false; btnText.classList.remove('hidden'); btnLoad.classList.add('hidden');
-        if (result.ok) {
-          window.location.href = 'index.html';
-        } else {
-          msg.textContent = result.error; msg.className = 'msg-error';
-        }
-      }, 400);
+      btn.disabled  = true;
+      btnText.classList.add('hidden');
+      btnLoad.classList.remove('hidden');
+
+      const result = await Auth.loginUser(email, password);
+
+      btn.disabled = false;
+      btnText.classList.remove('hidden');
+      btnLoad.classList.add('hidden');
+
+      if (result.ok) {
+        window.location.href = 'index.html';
+      } else {
+        showMsg(result.error);
+      }
     });
+
+    function showMsg(text) {
+      const msg     = document.getElementById('loginMsg');
+      msg.textContent = text;
+      msg.className   = 'msg-error';
+    }
   </script>
 </body>
 </html>
